@@ -109,7 +109,15 @@ export default function ProductAnalyzerPage() {
 
       console.log("[v0] API response status:", response.status)
 
-      const result = await response.json()
+      let result
+      const contentType = response.headers.get("content-type")
+      if (contentType && contentType.includes("application/json")) {
+        result = await response.json()
+      } else {
+        const text = await response.text()
+        result = { error: "Server error", details: text }
+      }
+
       console.log("[v0] API response data:", result)
 
       if (!response.ok) {

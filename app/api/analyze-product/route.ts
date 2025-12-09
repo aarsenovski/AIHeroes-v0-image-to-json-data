@@ -27,7 +27,7 @@ export async function POST(req: Request) {
             content: [
               {
                 type: "text",
-                text: "Analyze this product image and identify the product type and primary color. Be specific and accurate.",
+                text: "Analyze this product image in detail. Identify the product type, category, color(s), gender/demographic, style, fit, material, pattern, and any other relevant attributes. Be specific and accurate. If you can see a brand logo or name, include it. Focus on visual details that would help someone search for similar products.",
               },
               {
                 type: "image",
@@ -44,7 +44,23 @@ export async function POST(req: Request) {
       return Response.json({ error: "AI analysis failed", details: String(aiError) }, { status: 500 })
     }
 
-    const searchQuery = `${analysis.color} ${analysis.productType}`
+    const searchTerms = [
+      analysis.gender,
+      analysis.brand,
+      analysis.color,
+      ...(analysis.secondaryColors || []),
+      analysis.productType,
+      analysis.subcategory,
+      analysis.style,
+      analysis.fit,
+      analysis.material,
+      analysis.pattern,
+      analysis.sleeveLength,
+    ]
+      .filter(Boolean)
+      .join(" ")
+
+    const searchQuery = searchTerms || `${analysis.color} ${analysis.productType}`
     console.log("[v0] Searching Algolia with query:", searchQuery)
 
     let products = []

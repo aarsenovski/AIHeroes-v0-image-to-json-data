@@ -3,9 +3,46 @@ import { z } from "zod"
 export const productAnalysisSchema = z.object({
   productType: z
     .string()
-    .describe("The type of product in the image (e.g., t-shirt, trousers, dress, shoes, jacket, sweater, etc.)"),
-  color: z.string().describe("The primary color of the product (e.g., red, blue, black, white, navy, etc.)"),
-  confidence: z.number().min(0).max(1).optional().describe("Confidence score of the analysis (0-1)"),
+    .describe(
+      "The specific type of product in the image (e.g., t-shirt, polo shirt, dress shirt, jeans, chinos, dress, skirt, jacket, coat, sweater, hoodie, shoes, sneakers, boots, etc.)",
+    ),
+  category: z.string().describe("The broad category (e.g., Clothing, Footwear, Accessories, etc.)"),
+  subcategory: z
+    .string()
+    .optional()
+    .describe("More specific subcategory (e.g., Regular Fit T-Shirts, Skinny Jeans, Running Shoes, etc.)"),
+  color: z
+    .string()
+    .describe(
+      "The primary color of the product using common color names (e.g., red, blue, black, white, navy, grey, green, etc.)",
+    ),
+  secondaryColors: z
+    .array(z.string())
+    .optional()
+    .describe("Additional colors if the product has multiple colors or patterns"),
+  gender: z
+    .enum(["Mens", "Womens", "Unisex", "Kids"])
+    .optional()
+    .describe("The intended gender/demographic for the product"),
+  brand: z.string().optional().describe("The brand name if visible in the image (e.g., Nike, Adidas, Boss, etc.)"),
+  style: z.string().optional().describe("The style or aesthetic (e.g., casual, formal, sporty, streetwear, etc.)"),
+  fit: z
+    .enum(["Slim Fit", "Regular Fit", "Relaxed Fit", "Oversized", "Tailored"])
+    .optional()
+    .describe("The fit type if discernible from the image"),
+  material: z
+    .string()
+    .optional()
+    .describe("The apparent material or fabric (e.g., cotton, denim, leather, polyester, etc.)"),
+  pattern: z
+    .string()
+    .optional()
+    .describe("Any visible pattern (e.g., solid, striped, checked, floral, graphic print, etc.)"),
+  sleeveLength: z
+    .enum(["Sleeveless", "Short Sleeve", "3/4 Sleeve", "Long Sleeve"])
+    .optional()
+    .describe("Sleeve length for tops"),
+  confidence: z.number().min(0).max(1).optional().describe("Overall confidence score of the analysis (0-1)"),
 })
 
 const localizedStringSchema = z

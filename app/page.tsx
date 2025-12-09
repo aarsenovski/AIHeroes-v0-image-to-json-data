@@ -97,6 +97,8 @@ export default function ProductAnalyzerPage() {
     setMessages((prev) => [...prev, userMessage])
 
     try {
+      console.log("[v0] Sending image to API for analysis...")
+
       const response = await fetch("/api/analyze-product", {
         method: "POST",
         headers: {
@@ -105,13 +107,15 @@ export default function ProductAnalyzerPage() {
         body: JSON.stringify({ image: selectedImage }),
       })
 
-      console.log(response);
-
-      if (!response.ok) {
-        throw new Error("Analysis failed")
-      }
+      console.log("[v0] API response status:", response.status)
 
       const result = await response.json()
+      console.log("[v0] API response data:", result)
+
+      if (!response.ok) {
+        console.error("[v0] API error response:", result)
+        throw new Error(result.error || result.details || "Analysis failed")
+      }
 
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
@@ -123,11 +127,11 @@ export default function ProductAnalyzerPage() {
       }
       setMessages((prev) => [...prev, assistantMessage])
     } catch (error) {
-      console.error("Analysis error:", error)
+      console.error("[v0] Analysis error:", error)
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         type: "assistant",
-        content: "Sorry, there was an error analyzing the image. Please try again.",
+        content: `Sorry, there was an error analyzing the image: ${error instanceof Error ? error.message : String(error)}`,
         timestamp: new Date(),
       }
       setMessages((prev) => [...prev, errorMessage])

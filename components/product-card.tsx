@@ -45,9 +45,12 @@ export function ProductCard({ product }: ProductCardProps) {
   const prices = product.prices?.GBP
   const sizes = product.cleansize?.["en-GB"] || []
   const category = product.activitygroup?.["en-GB"]?.[0] || product.category?.["en-GB"]?.[0] || "Product"
-  const colourCode = product.colourCode
+
+  console.log("[v0] Product:", name, "alternativeImages:", product.alternativeImages)
 
   const imageUrl = product.alternativeImages?.[0] || "/diverse-products-still-life.png"
+
+  console.log("[v0] Using imageUrl:", imageUrl)
 
   return (
     <Card className="group overflow-hidden transition-all hover:shadow-lg">
@@ -57,6 +60,7 @@ export function ProductCard({ product }: ProductCardProps) {
           alt={name}
           className="h-full w-full object-cover transition-transform group-hover:scale-105"
           onError={(e) => {
+            console.log("[v0] Image failed to load:", imageUrl)
             e.currentTarget.src = "/diverse-fashion-display.png"
           }}
         />

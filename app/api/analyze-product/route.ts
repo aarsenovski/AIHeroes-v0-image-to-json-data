@@ -1,6 +1,6 @@
 import { generateObject } from "ai"
 import { z } from "zod"
-import { algoliasearch } from "algoliasearch"
+import algoliasearch from "algoliasearch"
 
 const productSchema = z.object({
   productType: z
@@ -70,27 +70,33 @@ export async function POST(req: Request) {
     let products = []
     try {
       const algoliaClient = getAlgoliaClient()
-      const index = algoliaClient.initIndex(getAlgoliaIndex())
-      const searchResults = await index.search({
-        query: searchQuery,
-        hitsPerPage: 6,
-        attributesToRetrieve: [
-          "objectID",
-          "name",
-          "brand",
-          "colourName",
-          "prices",
-          "cleansize",
-          "productLink",
-          "activitygroup",
-          "category",
-          "colourCode",
-          "sleevelength",
-          "garmentcare",
+      const indexName = getAlgoliaIndex()
+
+      const searchResults = await algoliaClient.search({
+        requests: [
+          {
+            indexName,
+            query: searchQuery,
+            hitsPerPage: 6,
+            attributesToRetrieve: [
+              "objectID",
+              "name",
+              "brand",
+              "colourName",
+              "prices",
+              "cleansize",
+              "productLink",
+              "activitygroup",
+              "category",
+              "colourCode",
+              "sleevelength",
+              "garmentcare",
+            ],
+          },
         ],
       })
 
-      products = "hits" in searchResults ? searchResults.hits : []
+      products = searchResults.results?.[0]?.hits || []
       console.log("[v0] Algolia returned", products.length, "products")
     } catch (algoliaError) {
       console.error("[v0] Algolia search failed:", algoliaError)

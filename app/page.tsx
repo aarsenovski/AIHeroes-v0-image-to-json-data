@@ -3,15 +3,30 @@
 import type React from "react"
 
 import { useState } from "react"
-import { Upload, Loader2, Sparkles } from "lucide-react"
+import { Upload, Loader2, Sparkles, Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
 import Image from "next/image"
+import { ProductCard } from "@/components/product-card"
 
 interface ProductAnalysis {
   productType: string
   color: string
   confidence?: number
+}
+
+interface AlgoliaProduct {
+  objectID: string
+  name?: { "en-GB"?: string }
+  brand?: string
+  colourName?: { "en-GB"?: string }
+  prices?: { GBP?: { sellingPrice: number; ticketPrice: number; discountPercentage: number } }
+  cleansize?: { "en-GB"?: string[] }
+  productLink?: string
+  activitygroup?: { "en-GB"?: string[] }
+  category?: { "en-GB"?: string[] }
+  colourCode?: string
 }
 
 interface Message {
@@ -20,6 +35,8 @@ interface Message {
   content?: string
   imageUrl?: string
   analysis?: ProductAnalysis
+  products?: AlgoliaProduct[]
+  searchQuery?: string
   timestamp: Date
 }
 
@@ -71,7 +88,6 @@ export default function ProductAnalyzerPage() {
 
     setIsAnalyzing(true)
 
-    // Add user message with image
     const userMessage: Message = {
       id: Date.now().toString(),
       type: "user",
@@ -81,6 +97,8 @@ export default function ProductAnalyzerPage() {
     setMessages((prev) => [...prev, userMessage])
 
     try {
+      console.log("[v0] Sending image to API for analysis...")
+
       const response = await fetch("/api/analyze-product", {
         method: "POST",
         headers: {
@@ -89,27 +107,39 @@ export default function ProductAnalyzerPage() {
         body: JSON.stringify({ image: selectedImage }),
       })
 
-      if (!response.ok) {
-        throw new Error("Analysis failed")
+      console.log("[v0] API response status:", response.status)
+
+      let result
+      const contentType = response.headers.get("content-type")
+      if (contentType && contentType.includes("application/json")) {
+        result = await response.json()
+      } else {
+        const text = await response.text()
+        result = { error: "Server error", details: text }
       }
 
-      const result = await response.json()
+      console.log("[v0] API response data:", result)
 
-      // Add assistant message with analysis
+      if (!response.ok) {
+        console.error("[v0] API error response:", result)
+        throw new Error(result.error || result.details || "Analysis failed")
+      }
+
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         type: "assistant",
-        analysis: result,
+        analysis: result.analysis,
+        products: result.products,
+        searchQuery: result.searchQuery,
         timestamp: new Date(),
       }
       setMessages((prev) => [...prev, assistantMessage])
     } catch (error) {
-      console.error("Analysis error:", error)
-      // Add error message
+      console.error("[v0] Analysis error:", error)
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         type: "assistant",
-        content: "Sorry, there was an error analyzing the image. Please try again.",
+        content: `Sorry, there was an error analyzing the image: ${error instanceof Error ? error.message : String(error)}`,
         timestamp: new Date(),
       }
       setMessages((prev) => [...prev, errorMessage])
@@ -121,57 +151,94 @@ export default function ProductAnalyzerPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="mx-auto max-w-4xl px-4 py-8">
+      <div className="mx-auto max-w-6xl px-4 py-8">
         {/* Header */}
         <div className="mb-8 text-center">
           <div className="mb-3 flex items-center justify-center gap-2">
             <Sparkles className="h-8 w-8 text-primary" />
             <h1 className="text-4xl font-bold text-foreground">Product Analyzer</h1>
           </div>
-          <p className="text-lg text-muted-foreground">Upload product images to extract structured data</p>
+          <p className="text-lg text-muted-foreground">Upload product images to find similar items</p>
         </div>
 
         {/* Messages */}
-        <div className="mb-6 space-y-4">
+        <div className="mb-6 space-y-6">
           {messages.map((message) => (
             <div key={message.id} className={`flex ${message.type === "user" ? "justify-end" : "justify-start"}`}>
-              <Card
-                className={`max-w-lg p-4 ${message.type === "user" ? "bg-primary text-primary-foreground" : "bg-card"}`}
-              >
-                {message.imageUrl && (
-                  <div className="relative mb-2 h-48 w-full overflow-hidden rounded-lg">
-                    <Image
-                      src={message.imageUrl || "/placeholder.svg"}
-                      alt="Uploaded product"
-                      fill
-                      className="object-cover"
-                    />
-                  </div>
-                )}
-                {message.analysis && (
-                  <div className="space-y-3">
-                    <p className="font-semibold text-foreground">Analysis Result:</p>
-                    <pre className="overflow-x-auto rounded-lg bg-muted p-4 text-sm">
-                      <code>{JSON.stringify(message.analysis, null, 2)}</code>
-                    </pre>
-                    <div className="space-y-2 pt-2">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium text-foreground">Product Type:</span>
-                        <span className="rounded-full bg-primary/20 px-3 py-1 text-sm font-semibold text-primary">
-                          {message.analysis.productType}
-                        </span>
+              {message.type === "user" ? (
+                <Card className="max-w-sm bg-primary p-4 text-primary-foreground">
+                  {message.imageUrl && (
+                    <div className="relative h-48 w-full overflow-hidden rounded-lg">
+                      <Image
+                        src={message.imageUrl || "/placeholder.svg"}
+                        alt="Uploaded product"
+                        fill
+                        className="object-cover"
+                      />
+                    </div>
+                  )}
+                </Card>
+              ) : (
+                <div className="w-full space-y-4">
+                  {message.analysis && (
+                    <Card className="bg-card p-6">
+                      <div className="mb-4 flex flex-wrap items-center gap-4">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium text-muted-foreground">Detected:</span>
+                          <Badge variant="default" className="text-sm">
+                            {message.analysis.productType}
+                          </Badge>
+                          <Badge variant="secondary" className="text-sm">
+                            {message.analysis.color}
+                          </Badge>
+                        </div>
+                        {message.searchQuery && (
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <Search className="h-4 w-4" />
+                            <span>Searching: &quot;{message.searchQuery}&quot;</span>
+                          </div>
+                        )}
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium text-foreground">Color:</span>
-                        <span className="rounded-full bg-accent/20 px-3 py-1 text-sm font-semibold text-accent-foreground">
-                          {message.analysis.color}
-                        </span>
+
+                      {/* JSON Output */}
+                      <details className="group">
+                        <summary className="cursor-pointer text-sm font-medium text-muted-foreground hover:text-foreground">
+                          View JSON Data
+                        </summary>
+                        <pre className="mt-2 overflow-x-auto rounded-lg bg-muted p-4 text-xs">
+                          <code>{JSON.stringify(message.analysis, null, 2)}</code>
+                        </pre>
+                      </details>
+                    </Card>
+                  )}
+
+                  {/* Product Grid */}
+                  {message.products && message.products.length > 0 && (
+                    <div>
+                      <h3 className="mb-4 text-lg font-semibold text-foreground">
+                        Similar Products ({message.products.length})
+                      </h3>
+                      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                        {message.products.map((product) => (
+                          <ProductCard key={product.objectID} product={product} />
+                        ))}
                       </div>
                     </div>
-                  </div>
-                )}
-                {message.content && <p className="text-foreground">{message.content}</p>}
-              </Card>
+                  )}
+
+                  {message.products && message.products.length === 0 && (
+                    <Card className="bg-muted/50 p-6 text-center">
+                      <p className="text-muted-foreground">No matching products found.</p>
+                    </Card>
+                  )}
+
+                  {message.content && (
+                    <Card className="bg-card p-4">
+                      <p className="text-foreground">{message.content}</p>
+                    </Card>
+                  )}
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -208,7 +275,7 @@ export default function ProductAnalyzerPage() {
                       ) : (
                         <>
                           <Sparkles className="h-4 w-4" />
-                          Analyze Product
+                          Analyze &amp; Find Products
                         </>
                       )}
                     </Button>

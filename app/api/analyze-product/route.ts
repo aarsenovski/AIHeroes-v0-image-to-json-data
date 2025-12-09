@@ -93,6 +93,7 @@ export async function POST(req: Request) {
       products = "hits" in searchResults ? searchResults.hits : []
       console.log("[v0] Algolia returned", products.length, "products")
     } catch (algoliaError) {
+      console.log("I ran");
       console.error("[v0] Algolia search failed:", algoliaError)
       return Response.json({
         analysis,

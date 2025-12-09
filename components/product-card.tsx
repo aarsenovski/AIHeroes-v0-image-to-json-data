@@ -30,6 +30,7 @@ interface AlgoliaProduct {
   category?: {
     "en-GB"?: string[]
   }
+  alternativeImages?: string[]
   colourCode?: string
 }
 
@@ -46,10 +47,7 @@ export function ProductCard({ product }: ProductCardProps) {
   const category = product.activitygroup?.["en-GB"]?.[0] || product.category?.["en-GB"]?.[0] || "Product"
   const colourCode = product.colourCode
 
-  // Build image URL from colourCode
-  const imageUrl = colourCode
-    ? `https://images.flannels.com/images/products/pdp/${colourCode}_l.jpg`
-    : "/diverse-products-still-life.png"
+  const imageUrl = product.alternativeImages?.[0] || "/diverse-products-still-life.png"
 
   return (
     <Card className="group overflow-hidden transition-all hover:shadow-lg">

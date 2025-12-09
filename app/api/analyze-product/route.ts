@@ -5,6 +5,8 @@ import { productAnalysisSchema } from "@/lib/schemas"
 export async function POST(req: Request) {
   console.log("[v0] API route called")
 
+  console.log("testing 1234")
+
   try {
     const body = await req.json()
     const { image } = body

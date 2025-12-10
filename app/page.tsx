@@ -1,15 +1,17 @@
-"use client";
+"use client"
 
-import type React from "react";
+import { Input } from "@/components/ui/input"
 
-import { ProductCard } from "@/components/product-card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { ImagePlus, Loader2, Search, Send, Sparkles, X } from "lucide-react";
-import Image from "next/image";
-import { useRef, useState } from "react";
+import type React from "react"
+
+import { ProductCard } from "@/components/product-card"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Card } from "@/components/ui/card"
+import { Spinner } from "@/components/ui/spinner"
+import { ImagePlus, Loader2, Search, Send, Sparkles, X } from "lucide-react"
+import Image from "next/image"
+import { useRef, useState } from "react"
 
 interface DetectedItem {
   color: string;
@@ -31,74 +33,76 @@ interface DetectedItem {
 }
 
 interface ProductAnalysis {
-  items: DetectedItem[];
-  imageContext?: string;
+  items: DetectedItem[]
+  imageContext?: string
 }
 
 interface AlgoliaProduct {
-  objectID: string;
-  alternativeImages?: string[];
-  name?: { "en-GB"?: string };
-  brand?: string;
-  colourName?: { "en-GB"?: string };
+  objectID: string
+  alternativeImages?: string[]
+  name?: { "en-GB"?: string }
+  brand?: string
+  colourName?: { "en-GB"?: string }
   prices?: {
     GBP?: {
-      sellingPrice: number;
-      ticketPrice: number;
-      discountPercentage: number;
-    };
-  };
-  cleansize?: { "en-GB"?: string[] };
-  productLink?: string;
-  activitygroup?: { "en-GB"?: string[] };
-  category?: { "en-GB"?: string[] };
-  colourCode?: string;
+      sellingPrice: number
+      ticketPrice: number
+      discountPercentage: number
+    }
+  }
+  cleansize?: { "en-GB"?: string[] }
+  productLink?: string
+  activitygroup?: { "en-GB"?: string[] }
+  category?: { "en-GB"?: string[] }
+  colourCode?: string
 }
 
 interface ItemSearchResult {
-  detectedItem: DetectedItem;
-  searchQuery: string;
-  products: AlgoliaProduct[];
+  detectedItem: DetectedItem
+  searchQuery: string
+  products: AlgoliaProduct[]
+  hasMore?: boolean // Added hasMore flag to track if more products available
 }
 
 interface Message {
-  id: string;
-  type: "user" | "assistant";
-  content?: string;
-  imageUrl?: string;
-  analysis?: ProductAnalysis;
-  results?: ItemSearchResult[];
-  analyzedImageUrl?: string; // Store the image that was analyzed
-  timestamp: Date;
+  id: string
+  type: "user" | "assistant"
+  content?: string
+  imageUrl?: string
+  analysis?: ProductAnalysis
+  results?: ItemSearchResult[]
+  analyzedImageUrl?: string // Store the image that was analyzed
+  timestamp: Date
 }
 
 export default function ProductAnalyzerPage() {
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [inputMessage, setInputMessage] = useState("");
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [messages, setMessages] = useState<Message[]>([])
+  const [inputMessage, setInputMessage] = useState("")
+  const [selectedImage, setSelectedImage] = useState<string | null>(null)
+  const [isAnalyzing, setIsAnalyzing] = useState(false)
+  const [loadingMore, setLoadingMore] = useState<Record<string, boolean>>({})
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleImageSelect = (file: File) => {
-    const reader = new FileReader();
+    const reader = new FileReader()
     reader.onloadend = () => {
-      setSelectedImage(reader.result as string);
-    };
-    reader.readAsDataURL(file);
-  };
+      setSelectedImage(reader.result as string)
+    }
+    reader.readAsDataURL(file)
+  }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      handleImageSelect(e.target.files[0]);
+      handleImageSelect(e.target.files[0])
     }
-  };
+  }
 
   const handleSubmit = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
+    if (e) e.preventDefault()
 
-    if (!selectedImage && !inputMessage.trim()) return;
+    if (!selectedImage && !inputMessage.trim()) return
 
-    setIsAnalyzing(true);
+    setIsAnalyzing(true)
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -106,29 +110,26 @@ export default function ProductAnalyzerPage() {
       content: inputMessage.trim() || undefined,
       imageUrl: selectedImage || undefined,
       timestamp: new Date(),
-    };
-    setMessages((prev) => [...prev, userMessage]);
+    }
+    setMessages((prev) => [...prev, userMessage])
 
-    const userContext = inputMessage.trim();
-    setInputMessage("");
-    const currentImage = selectedImage;
-    setSelectedImage(null);
+    const userContext = inputMessage.trim()
+    setInputMessage("")
+    const currentImage = selectedImage
+    setSelectedImage(null)
 
-    const imageToAnalyze =
-      currentImage ||
-      messages.findLast((msg) => msg.type === "user" && msg.imageUrl)?.imageUrl;
+    const imageToAnalyze = currentImage || messages.findLast((msg) => msg.type === "user" && msg.imageUrl)?.imageUrl
 
     if (!imageToAnalyze) {
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         type: "assistant",
-        content:
-          "Please upload an image first before sending follow-up messages.",
+        content: "Please upload an image first before sending follow-up messages.",
         timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, errorMessage]);
-      setIsAnalyzing(false);
-      return;
+      }
+      setMessages((prev) => [...prev, errorMessage])
+      setIsAnalyzing(false)
+      return
     }
 
     try {
@@ -138,7 +139,7 @@ export default function ProductAnalyzerPage() {
         .map((msg) => ({
           role: "user" as const,
           content: msg.content || "",
-        }));
+        }))
 
       const response = await fetch("/api/analyze-product", {
         method: "POST",
@@ -150,19 +151,19 @@ export default function ProductAnalyzerPage() {
           messages: conversationMessages,
           userContext: userContext || undefined,
         }),
-      });
+      })
 
-      let result;
-      const contentType = response.headers.get("content-type");
+      let result
+      const contentType = response.headers.get("content-type")
       if (contentType && contentType.includes("application/json")) {
-        result = await response.json();
+        result = await response.json()
       } else {
-        const text = await response.text();
-        result = { error: "Server error", details: text };
+        const text = await response.text()
+        result = { error: "Server error", details: text }
       }
 
       if (!response.ok) {
-        throw new Error(result.error || result.details || "Analysis failed");
+        throw new Error(result.error || result.details || "Analysis failed")
       }
 
       const assistantMessage: Message = {
@@ -172,8 +173,8 @@ export default function ProductAnalyzerPage() {
         results: result.results,
         analyzedImageUrl: imageToAnalyze, // Store the analyzed image
         timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, assistantMessage]);
+      }
+      setMessages((prev) => [...prev, assistantMessage])
     } catch (error) {
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
@@ -182,16 +183,82 @@ export default function ProductAnalyzerPage() {
           error instanceof Error ? error.message : String(error)
         }`,
         timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, errorMessage]);
+      }
+      setMessages((prev) => [...prev, errorMessage])
     } finally {
-      setIsAnalyzing(false);
+      setIsAnalyzing(false)
     }
-  };
+  }
+
+  const handleLoadMore = async (messageId: string, itemIndex: number) => {
+    const message = messages.find((m) => m.id === messageId)
+    if (!message?.results?.[itemIndex]) return
+
+    const loadingKey = `${messageId}-${itemIndex}`
+    setLoadingMore((prev) => ({ ...prev, [loadingKey]: true }))
+
+    try {
+      const result = message.results[itemIndex]
+      const currentPage = Math.floor(result.products.length / 9) + 1
+
+      const existingProductIds = result.products.map((p) => p.objectID)
+
+      const response = await fetch("/api/load-more-products", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          detectedItem: result.detectedItem,
+          page: currentPage,
+          existingProductIds,
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error("Failed to load more products")
+      }
+
+      const data = await response.json()
+
+      if (data.products.length > 0) {
+        setMessages((prev) =>
+          prev.map((msg) => {
+            if (msg.id === messageId && msg.results) {
+              const updatedResults = [...msg.results]
+              updatedResults[itemIndex] = {
+                ...updatedResults[itemIndex],
+                products: [...updatedResults[itemIndex].products, ...data.products],
+                hasMore: data.hasMore,
+              }
+              return { ...msg, results: updatedResults }
+            }
+            return msg
+          }),
+        )
+      } else {
+        setMessages((prev) =>
+          prev.map((msg) => {
+            if (msg.id === messageId && msg.results) {
+              const updatedResults = [...msg.results]
+              updatedResults[itemIndex] = {
+                ...updatedResults[itemIndex],
+                hasMore: false,
+              }
+              return { ...msg, results: updatedResults }
+            }
+            return msg
+          }),
+        )
+      }
+    } catch (error) {
+      console.error("Error loading more products:", error)
+    } finally {
+      setLoadingMore((prev) => ({ ...prev, [loadingKey]: false }))
+    }
+  }
 
   return (
-    <div className="flex min-h-screen flex-col bg-background">
-      <div className="mx-auto w-full max-w-6xl px-4 py-8">
+    <div className="flex h-screen flex-col overflow-hidden bg-background">
+      <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col overflow-y-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8 text-center">
           <div className="mb-3 flex items-center justify-center gap-2">
@@ -209,19 +276,12 @@ export default function ProductAnalyzerPage() {
         <div className="mb-6 space-y-6">
           {messages.length === 0 && (
             <div className="py-12 text-center">
-              <p className="text-muted-foreground">
-                Upload an image to get started
-              </p>
+              <p className="text-muted-foreground">Upload an image to get started</p>
             </div>
           )}
 
           {messages.map((message) => (
-            <div
-              key={message.id}
-              className={`flex ${
-                message.type === "user" ? "justify-end" : "justify-start"
-              }`}
-            >
+            <div key={message.id} className={`flex ${message.type === "user" ? "justify-end" : "justify-start"}`}>
               {message.type === "user" ? (
                 <div className="max-w-sm space-y-2">
                   {message.imageUrl && (
@@ -248,18 +308,36 @@ export default function ProductAnalyzerPage() {
                   {message.analyzedImageUrl && (
                     <Card className="bg-card p-4">
                       <div className="mb-2">
-                        <span className="text-sm font-medium text-muted-foreground">
-                          Analyzed Image:
-                        </span>
+                        <span className="text-sm font-medium text-muted-foreground">Analyzed Image:</span>
                       </div>
                       <div className="relative h-64 w-full max-w-md overflow-hidden rounded-lg">
                         <Image
-                          src={message.analyzedImageUrl}
+                          src={message.analyzedImageUrl || "/placeholder.svg"}
                           alt="Analyzed product"
                           fill
                           className="object-contain"
                         />
                       </div>
+                      {/* Display detected items as badges below the image */}
+                      {message.results && message.results.length > 0 && (
+                        <div className="mt-4 space-y-2">
+                          {message.results.map((result, idx) => (
+                            <div key={idx} className="flex flex-wrap gap-2">
+                              <Badge variant="default" className="text-sm">
+                                {result.detectedItem.subcategory}
+                              </Badge>
+                              <Badge variant="secondary" className="text-sm">
+                                {result.detectedItem.color}
+                              </Badge>
+                              {result.detectedItem.prominence === "primary" && (
+                                <Badge variant="outline" className="text-xs">
+                                  Primary
+                                </Badge>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </Card>
                   )}
 
@@ -289,9 +367,7 @@ export default function ProductAnalyzerPage() {
                           ))}
                         </div>
                         {message.analysis.imageContext && (
-                          <p className="mt-2 text-sm text-muted-foreground">
-                            {message.analysis.imageContext}
-                          </p>
+                          <p className="mt-2 text-sm text-muted-foreground">{message.analysis.imageContext}</p>
                         )}
                       </div>
 
@@ -301,9 +377,7 @@ export default function ProductAnalyzerPage() {
                           View JSON Data
                         </summary>
                         <pre className="mt-2 overflow-x-auto rounded-lg bg-muted p-4 text-xs">
-                          <code>
-                            {JSON.stringify(message.analysis, null, 2)}
-                          </code>
+                          <code>{JSON.stringify(message.analysis, null, 2)}</code>
                         </pre>
                       </details>
                     </Card>
@@ -332,18 +406,31 @@ export default function ProductAnalyzerPage() {
                               </p>
                               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                                 {result.products.map((product) => (
-                                  <ProductCard
-                                    key={product.objectID}
-                                    product={product}
-                                  />
+                                  <ProductCard key={product.objectID} product={product} />
                                 ))}
                               </div>
+                              {(result.hasMore === undefined || result.hasMore === true) && (
+                                <div className="flex justify-center pt-2">
+                                  <Button
+                                    variant="outline"
+                                    onClick={() => handleLoadMore(message.id, idx)}
+                                    disabled={loadingMore[`${message.id}-${idx}`]}
+                                  >
+                                    {loadingMore[`${message.id}-${idx}`] ? (
+                                      <>
+                                        <Spinner className="mr-2 h-4 w-4 animate-spin" />
+                                        Loading...
+                                      </>
+                                    ) : (
+                                      <>Show 9 more products</>
+                                    )}
+                                  </Button>
+                                </div>
+                              )}
                             </>
                           ) : (
                             <Card className="bg-muted/50 p-6 text-center">
-                              <p className="text-muted-foreground">
-                                No matching products found for this item.
-                              </p>
+                              <p className="text-muted-foreground">No matching products found for this item.</p>
                             </Card>
                           )}
                         </div>
@@ -363,7 +450,7 @@ export default function ProductAnalyzerPage() {
         </div>
       </div>
 
-      <div className="sticky bottom-0 border-t border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className="border-t border-border bg-background">
         <div className="mx-auto max-w-6xl px-4 py-4">
           <form onSubmit={handleSubmit} className="flex flex-col gap-3">
             {/* Image Preview */}
@@ -379,25 +466,14 @@ export default function ProductAnalyzerPage() {
                   <X className="h-4 w-4" />
                 </Button>
                 <div className="relative h-24 w-24 overflow-hidden rounded">
-                  <Image
-                    src={selectedImage || "/placeholder.svg"}
-                    alt="Selected"
-                    fill
-                    className="object-cover"
-                  />
+                  <Image src={selectedImage || "/placeholder.svg"} alt="Selected" fill className="object-cover" />
                 </div>
               </div>
             )}
 
             {/* Input Row */}
             <div className="flex gap-2">
-              <input
-                ref={fileInputRef}
-                type="file"
-                className="hidden"
-                accept="image/*"
-                onChange={handleFileChange}
-              />
+              <input ref={fileInputRef} type="file" className="hidden" accept="image/*" onChange={handleFileChange} />
               <Button
                 type="button"
                 size="icon"
@@ -416,23 +492,13 @@ export default function ProductAnalyzerPage() {
                 className="flex-1"
               />
 
-              <Button
-                type="submit"
-                size="icon"
-                disabled={
-                  isAnalyzing || (!selectedImage && !inputMessage.trim())
-                }
-              >
-                {isAnalyzing ? (
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                ) : (
-                  <Send className="h-5 w-5" />
-                )}
+              <Button type="submit" size="icon" disabled={isAnalyzing || (!selectedImage && !inputMessage.trim())}>
+                {isAnalyzing ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
               </Button>
             </div>
           </form>
         </div>
       </div>
     </div>
-  );
+  )
 }

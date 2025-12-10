@@ -1,13 +1,10 @@
 import type { DetectedItem } from "./schemas";
 
 export function buildSearchQuery(detectedItem: DetectedItem): string {
+  // Exclude brand, color, and subcategory - these will be used as filters
   const searchTerms = [
     detectedItem.gender,
-    detectedItem.brand,
-    detectedItem.color,
     ...(detectedItem.secondaryColors || []),
-    detectedItem.productType,
-    detectedItem.subcategory,
     detectedItem.style,
     detectedItem.fit,
     detectedItem.material,
@@ -21,7 +18,29 @@ export function buildSearchQuery(detectedItem: DetectedItem): string {
     return searchTerms.join(" ");
   }
 
-  return `${detectedItem.color} ${detectedItem.productType}`.trim();
+  // Fallback to category if available
+  return detectedItem.category || "";
+}
+
+export function buildAttributeFilters(detectedItem: DetectedItem): string[][] {
+  const facetFilters: string[][] = [];
+
+  // Add brand filter (case-sensitive, use exact value)
+  if (detectedItem.brand) {
+    facetFilters.push([`webbrand.en-GB:${detectedItem.brand}`]);
+  }
+
+  // Add color filter (case-sensitive, use exact value)
+  if (detectedItem.color) {
+    facetFilters.push([`cleancolour.en-GB:${detectedItem.color}`]);
+  }
+
+  // Add subcategory filter (case-sensitive, use exact value)
+  if (detectedItem.subcategory) {
+    facetFilters.push([`subcategory.en-GB:${detectedItem.subcategory}`]);
+  }
+
+  return facetFilters;
 }
 
 export function validateEnvironmentVariables(requiredVars: string[]): void {

@@ -12,12 +12,11 @@ import Image from "next/image";
 import { useRef, useState } from "react";
 
 interface DetectedItem {
-  productType: string;
   color: string;
   category: string;
   subcategory?: string;
   secondaryColors?: string[];
-  gender?: "Mens" | "Womens" | "Unisex" | "Kids";
+  gender?: string;
   brand?: string;
   style?: string;
   fit?: string;
@@ -276,7 +275,7 @@ export default function ProductAnalyzerPage() {
                           {message.analysis.items.map((item, idx) => (
                             <div key={idx} className="flex items-center gap-2">
                               <Badge variant="default" className="text-sm">
-                                {item.productType}
+                                {item.subcategory}
                               </Badge>
                               <Badge variant="secondary" className="text-sm">
                                 {item.color}
@@ -317,7 +316,7 @@ export default function ProductAnalyzerPage() {
                         <div key={idx} className="space-y-3">
                           <div className="flex items-center gap-3">
                             <h3 className="text-lg font-semibold text-foreground">
-                              {result.detectedItem.productType} -{" "}
+                              {result.detectedItem.subcategory} -{" "}
                               {result.detectedItem.color}
                             </h3>
                             <div className="flex items-center gap-2 text-sm text-muted-foreground">

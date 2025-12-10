@@ -12,6 +12,7 @@ export interface AlgoliaSearchParams {
   searchTerms: string | string[];
   hitsPerPage?: number;
   filters?: string;
+  facetFilters?: string[][];
   attributesToRetrieve?: string[];
 }
 
@@ -61,6 +62,7 @@ export async function searchAlgoliaProducts(
       searchTerms,
       hitsPerPage = 3,
       filters,
+      facetFilters,
       attributesToRetrieve = DEFAULT_ATTRIBUTES_TO_RETRIEVE,
     } = params;
 
@@ -79,6 +81,7 @@ export async function searchAlgoliaProducts(
           query: searchQuery,
           hitsPerPage,
           ...(filters && { filters }),
+          ...(facetFilters && facetFilters.length > 0 && { facetFilters }),
           attributesToRetrieve,
         },
       ],

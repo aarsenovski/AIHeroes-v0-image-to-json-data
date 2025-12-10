@@ -24,20 +24,23 @@ export async function POST(req: Request) {
     try {
       let contextPrompt = ""
       if (conversationHistory && conversationHistory.length > 0) {
-        contextPrompt = "\n\nPrevious conversation context:\n"
-        conversationHistory.forEach((msg: any, idx: number) => {
-          if (msg.type === "user" && msg.content) {
-            contextPrompt += `User said: "${msg.content}"\n`
-          }
-          if (msg.type === "assistant" && msg.analysis) {
-            contextPrompt += `Previous analysis: ${JSON.stringify(msg.analysis)}\n`
-          }
-        })
+        const userInputs = conversationHistory
+          .filter((msg: any) => msg.type === "user" && msg.content)
+          .map((msg: any) => msg.content)
+
+        if (userInputs.length > 0) {
+          contextPrompt = "\n\nPrevious user inputs:\n" + userInputs.map((input: string) => `- "${input}"`).join("\n")
+        }
       }
 
-      const promptText = userContext
-        ? `Analyze this product image in detail. The user has provided this additional context: "${userContext}".${contextPrompt} Use this context to inform your analysis. Identify the product type, category, color(s), gender/demographic, style, fit, material, pattern, and any other relevant attributes. Be specific and accurate. If you can see a brand logo or name, include it. Focus on visual details that would help someone search for similar products.`
-        : `Analyze this product image in detail.${contextPrompt} Identify the product type, category, color(s), gender/demographic, style, fit, material, pattern, and any other relevant attributes. Be specific and accurate. If you can see a brand logo or name, include it. Focus on visual details that would help someone search for similar products.`
+      const allUserInputs = contextPrompt ? contextPrompt : ""
+      const currentInput = userContext ? `\n\nCurrent user input: "${userContext}"` : ""
+
+      const promptText = `Analyze this product image in detail.${allUserInputs}${currentInput} 
+
+Use all the user inputs provided above to inform and refine your analysis. Identify the product type, category, color(s), gender/demographic, style, fit, material, pattern, and any other relevant attributes. Be specific and accurate. If you can see a brand logo or name, include it. Focus on visual details that would help someone search for similar products.
+
+If there are multiple user inputs, use them cumulatively to refine and improve the analysis based on their feedback and additional context.`
 
       console.log(promptText)
 

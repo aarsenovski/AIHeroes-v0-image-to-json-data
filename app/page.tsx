@@ -258,8 +258,8 @@ export default function ProductAnalyzerPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-background">
-      <div className="mx-auto w-full max-w-6xl px-4 py-8">
+    <div className="flex h-screen flex-col overflow-hidden bg-background">
+      <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col overflow-y-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8 text-center">
           <div className="mb-3 flex items-center justify-center gap-2">
@@ -446,7 +446,7 @@ export default function ProductAnalyzerPage() {
         </div>
       </div>
 
-      <div className="sticky bottom-0 border-t border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className="border-t border-border bg-background">
         <div className="mx-auto max-w-6xl px-4 py-4">
           <form onSubmit={handleSubmit} className="flex flex-col gap-3">
             {/* Image Preview */}

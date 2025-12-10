@@ -2,6 +2,7 @@ import { analyzeProductImage } from "@/lib/ai-services"
 import { searchAlgoliaProducts } from "@/lib/algolia-services"
 import { handleApiError } from "@/lib/errors"
 import {
+  buildAttributeFilters,
   buildSearchQuery,
   generateCorrelationId,
   sanitizeConversationMessages,
@@ -24,8 +25,11 @@ export async function POST(req: Request) {
       analysis.items.map(async (item) => {
         const searchQuery = buildSearchQuery(item)
 
-        // Build price filter if price constraints are present
-        let priceFilter = ""
+        // Build facet filters for categorical attributes (brand, color, subcategory)
+        const facetFilters = buildAttributeFilters(item);
+
+        // Build numeric price filter if price constraints are present
+        let priceFilter: string | undefined;
         if (item.maxPrice || item.minPrice) {
           const currency = item.currency || "GBP"
           const priceField = `prices.${currency}.sellingPrice`
@@ -37,14 +41,24 @@ export async function POST(req: Request) {
           } else if (item.minPrice) {
             priceFilter = `${priceField} >= ${item.minPrice}`
           }
+        }
 
-          console.log(`[${correlationId}] Applying price filter:`, priceFilter)
+        // Log applied filters
+        if (facetFilters.length > 0) {
+          console.log(
+            `[${correlationId}] Applying facetFilters:`,
+            facetFilters
+          );
+        }
+        if (priceFilter) {
+          console.log(`[${correlationId}] Applying price filter:`, priceFilter);
         }
 
         try {
           const products = await searchAlgoliaProducts({
             searchTerms: [searchQuery],
             hitsPerPage: 3,
+            ...(facetFilters.length > 0 && { facetFilters }),
             ...(priceFilter && { filters: priceFilter }),
           })
 

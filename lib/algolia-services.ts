@@ -9,11 +9,12 @@ export interface AlgoliaConfig {
 }
 
 export interface AlgoliaSearchParams {
-  searchTerms: string | string[]
-  hitsPerPage?: number
-  filters?: string
-  attributesToRetrieve?: string[]
-  page?: number // Added page parameter for pagination
+  searchTerms: string | string[];
+  hitsPerPage?: number;
+  filters?: string;
+  facetFilters?: string[][];
+  attributesToRetrieve?: string[];
+    page?: number // Added page parameter for pagination
 }
 
 const DEFAULT_ATTRIBUTES_TO_RETRIEVE = [
@@ -60,6 +61,7 @@ export async function searchAlgoliaProducts(params: AlgoliaSearchParams): Promis
       searchTerms,
       hitsPerPage = 3,
       filters,
+      facetFilters,
       attributesToRetrieve = DEFAULT_ATTRIBUTES_TO_RETRIEVE,
       page = 0, // Added page parameter with default value
     } = params
@@ -78,6 +80,7 @@ export async function searchAlgoliaProducts(params: AlgoliaSearchParams): Promis
           hitsPerPage,
           page, // Added page to search request
           ...(filters && { filters }),
+          ...(facetFilters && facetFilters.length > 0 && { facetFilters }),
           attributesToRetrieve,
         },
       ],

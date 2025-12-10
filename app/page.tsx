@@ -14,23 +14,22 @@ import Image from "next/image"
 import { useRef, useState } from "react"
 
 interface DetectedItem {
-  productType: string
-  color: string
-  category: string
-  subcategory?: string
-  secondaryColors?: string[]
-  gender?: "Mens" | "Womens" | "Unisex" | "Kids"
-  brand?: string
-  style?: string
-  fit?: string
-  material?: string
-  pattern?: string
-  sleeveLength?: string
-  prominence?: "primary" | "secondary"
-  maxPrice?: number
-  minPrice?: number
-  currency?: string
-  confidence?: number
+  color: string;
+  category: string;
+  subcategory?: string;
+  secondaryColors?: string[];
+  gender?: string;
+  brand?: string;
+  style?: string;
+  fit?: string;
+  material?: string;
+  pattern?: string;
+  sleeveLength?: string;
+  prominence?: "primary" | "secondary";
+  maxPrice?: number;
+  minPrice?: number;
+  currency?: string;
+  confidence?: number;
 }
 
 interface ProductAnalysis {
@@ -321,7 +320,7 @@ export default function ProductAnalyzerPage() {
                           {message.results.map((result, idx) => (
                             <div key={idx} className="flex flex-wrap gap-2">
                               <Badge variant="default" className="text-sm">
-                                {result.detectedItem.productType}
+                                {result.detectedItem.subcategory}
                               </Badge>
                               <Badge variant="secondary" className="text-sm">
                                 {result.detectedItem.color}
@@ -350,7 +349,7 @@ export default function ProductAnalyzerPage() {
                           {message.analysis.items.map((item, idx) => (
                             <div key={idx} className="flex items-center gap-2">
                               <Badge variant="default" className="text-sm">
-                                {item.productType}
+                                {item.subcategory}
                               </Badge>
                               <Badge variant="secondary" className="text-sm">
                                 {item.color}
@@ -387,7 +386,8 @@ export default function ProductAnalyzerPage() {
                         <div key={idx} className="space-y-3">
                           <div className="flex items-center gap-3">
                             <h3 className="text-lg font-semibold text-foreground">
-                              {result.detectedItem.productType} - {result.detectedItem.color}
+                              {result.detectedItem.subcategory} -{" "}
+                              {result.detectedItem.color}
                             </h3>
                             <div className="flex items-center gap-2 text-sm text-muted-foreground">
                               <Search className="h-4 w-4" />

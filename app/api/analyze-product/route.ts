@@ -25,24 +25,28 @@ export async function POST(req: Request) {
       let contextPrompt = ""
       if (conversationHistory && conversationHistory.length > 0) {
         const userInputs = conversationHistory
-          .filter((msg: any) => msg.type === "user" && msg.content)
+          .filter((msg: any) => msg.type === "user" && msg.content && msg.content.trim() !== "")
           .map((msg: any) => msg.content)
 
         if (userInputs.length > 0) {
-          contextPrompt = "\n\nPrevious user inputs:\n" + userInputs.map((input: string) => `- "${input}"`).join("\n")
+          contextPrompt =
+            "\n\nUser's refinement requests (apply all cumulatively):\n" +
+            userInputs.map((input: string) => `- "${input}"`).join("\n")
         }
       }
 
       const allUserInputs = contextPrompt ? contextPrompt : ""
-      const currentInput = userContext ? `\n\nCurrent user input: "${userContext}"` : ""
+      const currentInput = userContext ? `\n\nNew refinement: "${userContext}"` : ""
 
       const promptText = `Analyze this product image in detail.${allUserInputs}${currentInput} 
 
-Use all the user inputs provided above to inform and refine your analysis. Identify the product type, category, color(s), gender/demographic, style, fit, material, pattern, and any other relevant attributes. Be specific and accurate. If you can see a brand logo or name, include it. Focus on visual details that would help someone search for similar products.
+IMPORTANT: The user inputs above are CUMULATIVE refinements to the search. Each new input adds constraints without removing previous ones. For example:
+- If the user said "blue only", then later "price below 50 pounds", you should maintain BOTH constraints (blue color AND price limit).
+- Apply ALL user refinements together when determining the product attributes.
 
-If there are multiple user inputs, use them cumulatively to refine and improve the analysis based on their feedback and additional context.`
+Identify the product type, category, color(s), gender/demographic, style, fit, material, pattern, and any other relevant attributes. Be specific and accurate. If you can see a brand logo or name, include it. Focus on visual details that would help someone search for similar products.`
 
-    console.log(`[v0] Sending prompt ${promptText}`)
+      console.log(`[v0] Sending prompt ${promptText}`)
 
       const result = await generateObject({
         model: "anthropic/claude-sonnet-4.5",

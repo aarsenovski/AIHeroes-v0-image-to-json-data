@@ -44,7 +44,15 @@ IMPORTANT: The user inputs above are CUMULATIVE refinements to the search. Each 
 - If the user said "blue only", then later "price below 50 pounds", you should maintain BOTH constraints (blue color AND price limit).
 - Apply ALL user refinements together when determining the product attributes.
 
-Identify the product type, category, color(s), gender/demographic, style, fit, material, pattern, and any other relevant attributes. Be specific and accurate. If you can see a brand logo or name, include it. Focus on visual details that would help someone search for similar products.`
+Identify the product type, category, color(s), gender/demographic, style, fit, material, pattern, and any other relevant attributes. Be specific and accurate. If you can see a brand logo or name, include it. Focus on visual details that would help someone search for similar products.
+
+If the user mentions price constraints (e.g., "under 50 pounds", "below 100 euros", "less than $75"), extract:
+- maxPrice: the maximum price value as a number
+- minPrice: the minimum price value as a number (if they say "over X" or "above X")
+- currency: the currency code (GBP for pounds, EUR for euros, USD for dollars)
+
+Example: "under 50 pounds" → maxPrice: 50, currency: "GBP"
+Example: "between 20 and 50 euros" → minPrice: 20, maxPrice: 50, currency: "EUR"`
 
       console.log(`[v0] Sending prompt ${promptText}`)
 
@@ -93,6 +101,22 @@ Identify the product type, category, color(s), gender/demographic, style, fit, m
     const searchQuery = searchTerms || `${analysis.color} ${analysis.productType}`
     console.log("[v0] Searching Algolia with query:", searchQuery)
 
+    let priceFilter = ""
+    if (analysis.maxPrice || analysis.minPrice) {
+      const currency = analysis.currency || "GBP"
+      const priceField = `prices.${currency}.sellingPrice`
+
+      if (analysis.minPrice && analysis.maxPrice) {
+        priceFilter = `${priceField} >= ${analysis.minPrice} AND ${priceField} <= ${analysis.maxPrice}`
+      } else if (analysis.maxPrice) {
+        priceFilter = `${priceField} <= ${analysis.maxPrice}`
+      } else if (analysis.minPrice) {
+        priceFilter = `${priceField} >= ${analysis.minPrice}`
+      }
+
+      console.log("[v0] Applying price filter:", priceFilter)
+    }
+
     let products = []
     try {
       const appId = process.env.ALGOLIA_APP_ID
@@ -128,6 +152,7 @@ Identify the product type, category, color(s), gender/demographic, style, fit, m
             indexName,
             query: searchQuery,
             hitsPerPage: 6,
+            ...(priceFilter && { filters: priceFilter }),
             attributesToRetrieve: [
               "objectID",
               "name",

@@ -42,7 +42,7 @@ Use all the user inputs provided above to inform and refine your analysis. Ident
 
 If there are multiple user inputs, use them cumulatively to refine and improve the analysis based on their feedback and additional context.`
 
-      console.log(promptText)
+    console.log(`[v0] Sending prompt ${promptText}`)
 
       const result = await generateObject({
         model: "anthropic/claude-sonnet-4.5",

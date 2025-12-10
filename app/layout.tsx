@@ -8,8 +8,9 @@ const _geist = Geist({ subsets: ["latin"] })
 const _geistMono = Geist_Mono({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "Product Analyzer - AI-Powered Image Analysis",
-  description: "Upload product images to extract structured data including product type and color using AI",
+  title: "Product Analyzer - AI-Powered Requirements Analysis",
+  description:
+    "Describe your product requirements to extract structured data including product type and color using AI",
   generator: "v0.app",
   icons: {
     icon: [

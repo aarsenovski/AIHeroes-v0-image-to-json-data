@@ -123,7 +123,7 @@ export default function NewPage() {
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         type: "assistant",
-        content: "Please upload an image first before sending follow-up messages.",
+        content: "Please provide your requirements first before sending follow-up messages.",
         timestamp: new Date(),
       }
       setMessages((prev) => [...prev, errorMessage])
@@ -303,7 +303,7 @@ export default function NewPage() {
           {isAnalyzing && hasExistingResults && (
             <div className="sticky top-0 z-10 flex items-center justify-center gap-3 bg-primary/10 py-3 text-sm font-medium backdrop-blur-sm">
               <Loader2 className="h-4 w-4 animate-spin" />
-              <span>Analyzing new image...</span>
+              <span>Analyzing new requirements...</span>
             </div>
           )}
 
@@ -311,8 +311,8 @@ export default function NewPage() {
             <div className="flex flex-1 items-center justify-center p-8">
               <div className="text-center space-y-4">
                 <ShoppingBag className="mx-auto h-12 w-12 text-muted-foreground" />
-                <h2 className="text-2xl font-bold">Upload an image to get started</h2>
-                <p className="text-sm text-muted-foreground">Find similar products by uploading a photo</p>
+                <h2 className="text-2xl font-bold">Analyze new requirements to get started</h2>
+                <p className="text-sm text-muted-foreground">Find similar products by describing your needs</p>
               </div>
             </div>
           ) : isAnalyzing && !hasExistingResults ? (
@@ -338,7 +338,7 @@ export default function NewPage() {
                 </div>
               </div>
               <div className="text-center space-y-2">
-                <p className="text-lg font-semibold text-foreground">Analyzing Your Fashion...</p>
+                <p className="text-lg font-semibold text-foreground">Analyzing Your Requirements...</p>
                 <p className="text-sm text-muted-foreground">Our AI is finding the perfect matches for you</p>
               </div>
             </div>
@@ -351,7 +351,7 @@ export default function NewPage() {
                       {message.analyzedImageUrl && (
                         <Card className="mb-6 overflow-hidden">
                           <div className="p-4">
-                            <h3 className="mb-4 text-sm font-medium text-muted-foreground">Analyzed Image:</h3>
+                            <h3 className="mb-4 text-sm font-medium text-muted-foreground">Analyzed Requirements:</h3>
                             <div className="flex items-start gap-4">
                               <div className="relative h-48 w-48 flex-shrink-0 overflow-hidden rounded-lg">
                                 <Image

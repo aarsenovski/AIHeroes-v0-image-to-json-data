@@ -44,8 +44,6 @@ export function ProductCard({ product }: ProductCardProps) {
   const brand = product.brand || "Unknown Brand"
   const color = product.colourName?.["en-GB"] || "N/A"
   const prices = product.prices?.GBP
-  const sizes = product.cleansize?.["en-GB"] || []
-  const category = product.activitygroup?.["en-GB"]?.[0] || product.category?.["en-GB"]?.[0] || "Product"
   const colourCode = product.colourCode
 
   // Build image URL from colourCode
@@ -58,93 +56,71 @@ export function ProductCard({ product }: ProductCardProps) {
 
   const hasMultipleImages = images.length > 1
 
+  const handleCarouselClick = (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+  }
+
   return (
-    <Card className="group overflow-hidden transition-all hover:shadow-lg">
-      <div className="relative aspect-square overflow-hidden bg-muted">
-        {hasMultipleImages ? (
-          <Carousel className="w-full">
-            <CarouselContent>
-              {images.map((img, index) => (
-                <CarouselItem key={index}>
-                  <img
-                    src={img || "/placeholder.svg"}
-                    alt={`${name} - Image ${index + 1}`}
-                    className="h-full w-full object-cover transition-transform group-hover:scale-105"
-                    onError={(e) => {
-                      e.currentTarget.src = "/diverse-fashion-display.png"
-                    }}
-                  />
-                </CarouselItem>
-              ))}
-            </CarouselContent>
-            <CarouselPrevious className="left-2 opacity-0 transition-opacity group-hover:opacity-100" />
-            <CarouselNext className="right-2 opacity-0 transition-opacity group-hover:opacity-100" />
-          </Carousel>
-        ) : (
-          <img
-            src={images[0] || "/placeholder.svg"}
-            alt={name}
-            className="h-full w-full object-cover transition-transform group-hover:scale-105"
-            onError={(e) => {
-              e.currentTarget.src = "/diverse-fashion-display.png"
-            }}
-          />
-        )}
-        {prices && prices.discountPercentage > 0 && (
-          <Badge className="absolute left-2 top-2 bg-destructive text-destructive-foreground">
-            -{Math.round(prices.discountPercentage)}%
-          </Badge>
-        )}
-      </div>
-      <div className="space-y-3 p-4">
-        <div>
-          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{brand}</p>
-          <h3 className="mt-1 line-clamp-2 font-semibold text-foreground">{name}</h3>
+    <a
+      href={product.productLink ? `https://www.houseoffraser.co.uk/${product.productLink}` : "#"}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="group block"
+    >
+      <div className="overflow-hidden bg-background transition-all hover:shadow-md">
+        <div className="relative aspect-square overflow-hidden bg-muted/30">
+          {hasMultipleImages ? (
+            <div onClick={handleCarouselClick}>
+              <Carousel className="w-full">
+                <CarouselContent>
+                  {images.map((img, index) => (
+                    <CarouselItem key={index}>
+                      <img
+                        src={img || "/placeholder.svg"}
+                        alt={`${name} - Image ${index + 1}`}
+                        className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                        onError={(e) => {
+                          e.currentTarget.src = "/diverse-fashion-display.png"
+                        }}
+                      />
+                    </CarouselItem>
+                  ))}
+                </CarouselContent>
+                <CarouselPrevious className="left-2 opacity-0 transition-opacity group-hover:opacity-100" />
+                <CarouselNext className="right-2 opacity-0 transition-opacity group-hover:opacity-100" />
+              </Carousel>
+            </div>
+          ) : (
+            <img
+              src={images[0] || "/placeholder.svg"}
+              alt={name}
+              className="h-full w-full object-cover transition-transform group-hover:scale-105"
+              onError={(e) => {
+                e.currentTarget.src = "/diverse-fashion-display.png"
+              }}
+            />
+          )}
+          {prices && prices.discountPercentage > 0 && (
+            <div className="absolute left-0 top-2 bg-destructive px-2 py-1 text-xs font-bold text-destructive-foreground">
+              -{Math.round(prices.discountPercentage)}%
+            </div>
+          )}
         </div>
-
-        <div className="flex flex-wrap items-center gap-2">
-          <Badge variant="secondary" className="gap-1">
-            <Tag className="h-3 w-3" />
-            {category}
-          </Badge>
-          <Badge variant="outline" className="gap-1">
-            <Palette className="h-3 w-3" />
-            {color}
-          </Badge>
+        <div className="space-y-2 p-3">
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{brand}</p>
+          <h3 className="line-clamp-2 text-sm font-medium text-foreground leading-tight">{name}</h3>
+          
+          {prices && (
+            <div className="flex items-baseline gap-2 pt-1">
+              <span className="text-base font-bold text-foreground">£{prices.sellingPrice.toFixed(2)}</span>
+              {prices.ticketPrice > prices.sellingPrice && (
+                <span className="text-xs text-muted-foreground line-through">£{prices.ticketPrice.toFixed(2)}</span>
+              )}
+            </div>
+          )}
         </div>
-
-        {sizes.length > 0 && (
-          <div className="flex flex-wrap gap-1">
-            {sizes.slice(0, 5).map((size) => (
-              <span key={size} className="rounded border border-border px-2 py-0.5 text-xs text-muted-foreground">
-                {size}
-              </span>
-            ))}
-            {sizes.length > 5 && <span className="px-2 py-0.5 text-xs text-muted-foreground">+{sizes.length - 5}</span>}
-          </div>
-        )}
-
-        {prices && (
-          <div className="flex items-baseline gap-2">
-            <span className="text-lg font-bold text-foreground">£{prices.sellingPrice.toFixed(2)}</span>
-            {prices.ticketPrice > prices.sellingPrice && (
-              <span className="text-sm text-muted-foreground line-through">£{prices.ticketPrice.toFixed(2)}</span>
-            )}
-          </div>
-        )}
-
-        {product.productLink && (
-          <a
-            href={`https://www.houseoffraser.co.uk/${product.productLink}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-2 flex items-center justify-center gap-2 rounded-md bg-primary py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-          >
-            <ShoppingBag className="h-4 w-4" />
-            View Product
-          </a>
-        )}
       </div>
-    </Card>
+    </a>
   )
 }

@@ -1,80 +1,105 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { ProductCard } from "@/components/product-card"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { ImagePlus, Loader2, Search, Send, Sparkles, X } from "lucide-react"
-import Image from "next/image"
-import { useState, useRef } from "react"
+import { ProductCard } from "@/components/product-card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { ImagePlus, Loader2, Search, Send, Sparkles, X } from "lucide-react";
+import Image from "next/image";
+import { useRef, useState } from "react";
+
+interface DetectedItem {
+  productType: string;
+  color: string;
+  category: string;
+  subcategory?: string;
+  secondaryColors?: string[];
+  gender?: "Mens" | "Womens" | "Unisex" | "Kids";
+  brand?: string;
+  style?: string;
+  fit?: string;
+  material?: string;
+  pattern?: string;
+  sleeveLength?: string;
+  prominence?: "primary" | "secondary";
+  maxPrice?: number;
+  minPrice?: number;
+  currency?: string;
+  confidence?: number;
+}
 
 interface ProductAnalysis {
-  productType: string
-  color: string
-  confidence?: number
+  items: DetectedItem[];
+  imageContext?: string;
 }
 
 interface AlgoliaProduct {
-  objectID: string
-  alternativeImages?: string[]
-  name?: { "en-GB"?: string }
-  brand?: string
-  colourName?: { "en-GB"?: string }
+  objectID: string;
+  alternativeImages?: string[];
+  name?: { "en-GB"?: string };
+  brand?: string;
+  colourName?: { "en-GB"?: string };
   prices?: {
     GBP?: {
-      sellingPrice: number
-      ticketPrice: number
-      discountPercentage: number
-    }
-  }
-  cleansize?: { "en-GB"?: string[] }
-  productLink?: string
-  activitygroup?: { "en-GB"?: string[] }
-  category?: { "en-GB"?: string[] }
-  colourCode?: string
+      sellingPrice: number;
+      ticketPrice: number;
+      discountPercentage: number;
+    };
+  };
+  cleansize?: { "en-GB"?: string[] };
+  productLink?: string;
+  activitygroup?: { "en-GB"?: string[] };
+  category?: { "en-GB"?: string[] };
+  colourCode?: string;
+}
+
+interface ItemSearchResult {
+  detectedItem: DetectedItem;
+  searchQuery: string;
+  products: AlgoliaProduct[];
 }
 
 interface Message {
-  id: string
-  type: "user" | "assistant"
-  content?: string
-  imageUrl?: string
-  analysis?: ProductAnalysis
-  products?: AlgoliaProduct[]
-  searchQuery?: string
-  timestamp: Date
+  id: string;
+  type: "user" | "assistant";
+  content?: string;
+  imageUrl?: string;
+  analysis?: ProductAnalysis;
+  results?: ItemSearchResult[];
+  analyzedImageUrl?: string; // Store the image that was analyzed
+  timestamp: Date;
 }
 
 export default function ProductAnalyzerPage() {
-  const [messages, setMessages] = useState<Message[]>([])
-  const [inputMessage, setInputMessage] = useState("")
-  const [selectedImage, setSelectedImage] = useState<string | null>(null)
-  const [isAnalyzing, setIsAnalyzing] = useState(false)
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [inputMessage, setInputMessage] = useState("");
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleImageSelect = (file: File) => {
-    const reader = new FileReader()
+    const reader = new FileReader();
     reader.onloadend = () => {
-      setSelectedImage(reader.result as string)
-    }
-    reader.readAsDataURL(file)
-  }
+      setSelectedImage(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      handleImageSelect(e.target.files[0])
+      handleImageSelect(e.target.files[0]);
     }
-  }
+  };
 
   const handleSubmit = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault()
+    if (e) e.preventDefault();
 
-    if (!selectedImage && !inputMessage.trim()) return
+    if (!selectedImage && !inputMessage.trim()) return;
 
-    setIsAnalyzing(true)
+    setIsAnalyzing(true);
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -82,35 +107,39 @@ export default function ProductAnalyzerPage() {
       content: inputMessage.trim() || undefined,
       imageUrl: selectedImage || undefined,
       timestamp: new Date(),
-    }
-    setMessages((prev) => [...prev, userMessage])
+    };
+    setMessages((prev) => [...prev, userMessage]);
 
-    const userContext = inputMessage.trim()
-    setInputMessage("")
-    const currentImage = selectedImage
-    setSelectedImage(null)
+    const userContext = inputMessage.trim();
+    setInputMessage("");
+    const currentImage = selectedImage;
+    setSelectedImage(null);
 
-    const imageToAnalyze = currentImage || messages.findLast((msg) => msg.type === "user" && msg.imageUrl)?.imageUrl
+    const imageToAnalyze =
+      currentImage ||
+      messages.findLast((msg) => msg.type === "user" && msg.imageUrl)?.imageUrl;
 
     if (!imageToAnalyze) {
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         type: "assistant",
-        content: "Please upload an image first before sending follow-up messages.",
+        content:
+          "Please upload an image first before sending follow-up messages.",
         timestamp: new Date(),
-      }
-      setMessages((prev) => [...prev, errorMessage])
-      setIsAnalyzing(false)
-      return
+      };
+      setMessages((prev) => [...prev, errorMessage]);
+      setIsAnalyzing(false);
+      return;
     }
 
     try {
-      const conversationHistory = messages.map((msg) => ({
-        type: msg.type,
-        content: msg.content,
-        analysis: msg.analysis,
-        searchQuery: msg.searchQuery,
-      }))
+      // Build conversation messages from previous messages
+      const conversationMessages = messages
+        .filter((msg) => msg.type === "user" && msg.content)
+        .map((msg) => ({
+          role: "user" as const,
+          content: msg.content || "",
+        }));
 
       const response = await fetch("/api/analyze-product", {
         method: "POST",
@@ -119,33 +148,33 @@ export default function ProductAnalyzerPage() {
         },
         body: JSON.stringify({
           image: imageToAnalyze,
+          messages: conversationMessages,
           userContext: userContext || undefined,
-          conversationHistory,
         }),
-      })
+      });
 
-      let result
-      const contentType = response.headers.get("content-type")
+      let result;
+      const contentType = response.headers.get("content-type");
       if (contentType && contentType.includes("application/json")) {
-        result = await response.json()
+        result = await response.json();
       } else {
-        const text = await response.text()
-        result = { error: "Server error", details: text }
+        const text = await response.text();
+        result = { error: "Server error", details: text };
       }
 
       if (!response.ok) {
-        throw new Error(result.error || result.details || "Analysis failed")
+        throw new Error(result.error || result.details || "Analysis failed");
       }
 
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         type: "assistant",
         analysis: result.analysis,
-        products: result.products,
-        searchQuery: result.searchQuery,
+        results: result.results,
+        analyzedImageUrl: imageToAnalyze, // Store the analyzed image
         timestamp: new Date(),
-      }
-      setMessages((prev) => [...prev, assistantMessage])
+      };
+      setMessages((prev) => [...prev, assistantMessage]);
     } catch (error) {
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
@@ -154,12 +183,12 @@ export default function ProductAnalyzerPage() {
           error instanceof Error ? error.message : String(error)
         }`,
         timestamp: new Date(),
-      }
-      setMessages((prev) => [...prev, errorMessage])
+      };
+      setMessages((prev) => [...prev, errorMessage]);
     } finally {
-      setIsAnalyzing(false)
+      setIsAnalyzing(false);
     }
-  }
+  };
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
@@ -168,21 +197,32 @@ export default function ProductAnalyzerPage() {
         <div className="mb-8 text-center">
           <div className="mb-3 flex items-center justify-center gap-2">
             <Sparkles className="h-8 w-8 text-primary" />
-            <h1 className="text-4xl font-bold text-foreground">Product Analyzer</h1>
+            <h1 className="text-4xl font-bold text-foreground">
+              Product Analyzer
+            </h1>
           </div>
-          <p className="text-lg text-muted-foreground">Upload product images to find similar items</p>
+          <p className="text-lg text-muted-foreground">
+            Upload product images to find similar items
+          </p>
         </div>
 
         {/* Messages */}
         <div className="mb-6 space-y-6">
           {messages.length === 0 && (
             <div className="py-12 text-center">
-              <p className="text-muted-foreground">Upload an image to get started</p>
+              <p className="text-muted-foreground">
+                Upload an image to get started
+              </p>
             </div>
           )}
 
           {messages.map((message) => (
-            <div key={message.id} className={`flex ${message.type === "user" ? "justify-end" : "justify-start"}`}>
+            <div
+              key={message.id}
+              className={`flex ${
+                message.type === "user" ? "justify-end" : "justify-start"
+              }`}
+            >
               {message.type === "user" ? (
                 <div className="max-w-sm space-y-2">
                   {message.imageUrl && (
@@ -205,23 +245,54 @@ export default function ProductAnalyzerPage() {
                 </div>
               ) : (
                 <div className="w-full space-y-4">
+                  {/* Show analyzed image */}
+                  {message.analyzedImageUrl && (
+                    <Card className="bg-card p-4">
+                      <div className="mb-2">
+                        <span className="text-sm font-medium text-muted-foreground">
+                          Analyzed Image:
+                        </span>
+                      </div>
+                      <div className="relative h-64 w-full max-w-md overflow-hidden rounded-lg">
+                        <Image
+                          src={message.analyzedImageUrl}
+                          alt="Analyzed product"
+                          fill
+                          className="object-contain"
+                        />
+                      </div>
+                    </Card>
+                  )}
+
                   {message.analysis && (
                     <Card className="bg-card p-6">
-                      <div className="mb-4 flex flex-wrap items-center gap-4">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium text-muted-foreground">Detected:</span>
-                          <Badge variant="default" className="text-sm">
-                            {message.analysis.productType}
-                          </Badge>
-                          <Badge variant="secondary" className="text-sm">
-                            {message.analysis.color}
-                          </Badge>
+                      <div className="mb-4">
+                        <div className="mb-2 flex items-center gap-2">
+                          <span className="text-sm font-medium text-muted-foreground">
+                            Detected {message.analysis.items.length} item(s):
+                          </span>
                         </div>
-                        {message.searchQuery && (
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <Search className="h-4 w-4" />
-                            <span>Searching: &quot;{message.searchQuery}&quot;</span>
-                          </div>
+                        <div className="flex flex-wrap gap-2">
+                          {message.analysis.items.map((item, idx) => (
+                            <div key={idx} className="flex items-center gap-2">
+                              <Badge variant="default" className="text-sm">
+                                {item.productType}
+                              </Badge>
+                              <Badge variant="secondary" className="text-sm">
+                                {item.color}
+                              </Badge>
+                              {item.prominence === "primary" && (
+                                <Badge variant="outline" className="text-xs">
+                                  Primary
+                                </Badge>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                        {message.analysis.imageContext && (
+                          <p className="mt-2 text-sm text-muted-foreground">
+                            {message.analysis.imageContext}
+                          </p>
                         )}
                       </div>
 
@@ -231,30 +302,54 @@ export default function ProductAnalyzerPage() {
                           View JSON Data
                         </summary>
                         <pre className="mt-2 overflow-x-auto rounded-lg bg-muted p-4 text-xs">
-                          <code>{JSON.stringify(message.analysis, null, 2)}</code>
+                          <code>
+                            {JSON.stringify(message.analysis, null, 2)}
+                          </code>
                         </pre>
                       </details>
                     </Card>
                   )}
 
-                  {/* Product Grid */}
-                  {message.products && message.products.length > 0 && (
-                    <div>
-                      <h3 className="mb-4 text-lg font-semibold text-foreground">
-                        Similar Products ({message.products.length})
-                      </h3>
-                      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                        {message.products.map((product) => (
-                          <ProductCard key={product.objectID} product={product} />
-                        ))}
-                      </div>
-                    </div>
-                  )}
+                  {/* Results for each detected item */}
+                  {message.results && message.results.length > 0 && (
+                    <div className="space-y-6">
+                      {message.results.map((result, idx) => (
+                        <div key={idx} className="space-y-3">
+                          <div className="flex items-center gap-3">
+                            <h3 className="text-lg font-semibold text-foreground">
+                              {result.detectedItem.productType} -{" "}
+                              {result.detectedItem.color}
+                            </h3>
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                              <Search className="h-4 w-4" />
+                              <span>&quot;{result.searchQuery}&quot;</span>
+                            </div>
+                          </div>
 
-                  {message.products && message.products.length === 0 && (
-                    <Card className="bg-muted/50 p-6 text-center">
-                      <p className="text-muted-foreground">No matching products found.</p>
-                    </Card>
+                          {result.products.length > 0 ? (
+                            <>
+                              <p className="text-sm text-muted-foreground">
+                                Found {result.products.length} similar products
+                              </p>
+                              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                                {result.products.map((product) => (
+                                  <ProductCard
+                                    key={product.objectID}
+                                    product={product}
+                                  />
+                                ))}
+                              </div>
+                            </>
+                          ) : (
+                            <Card className="bg-muted/50 p-6 text-center">
+                              <p className="text-muted-foreground">
+                                No matching products found for this item.
+                              </p>
+                            </Card>
+                          )}
+                        </div>
+                      ))}
+                    </div>
                   )}
 
                   {message.content && (
@@ -285,14 +380,25 @@ export default function ProductAnalyzerPage() {
                   <X className="h-4 w-4" />
                 </Button>
                 <div className="relative h-24 w-24 overflow-hidden rounded">
-                  <Image src={selectedImage || "/placeholder.svg"} alt="Selected" fill className="object-cover" />
+                  <Image
+                    src={selectedImage || "/placeholder.svg"}
+                    alt="Selected"
+                    fill
+                    className="object-cover"
+                  />
                 </div>
               </div>
             )}
 
             {/* Input Row */}
             <div className="flex gap-2">
-              <input ref={fileInputRef} type="file" className="hidden" accept="image/*" onChange={handleFileChange} />
+              <input
+                ref={fileInputRef}
+                type="file"
+                className="hidden"
+                accept="image/*"
+                onChange={handleFileChange}
+              />
               <Button
                 type="button"
                 size="icon"
@@ -311,13 +417,23 @@ export default function ProductAnalyzerPage() {
                 className="flex-1"
               />
 
-              <Button type="submit" size="icon" disabled={isAnalyzing || (!selectedImage && !inputMessage.trim())}>
-                {isAnalyzing ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
+              <Button
+                type="submit"
+                size="icon"
+                disabled={
+                  isAnalyzing || (!selectedImage && !inputMessage.trim())
+                }
+              >
+                {isAnalyzing ? (
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                ) : (
+                  <Send className="h-5 w-5" />
+                )}
               </Button>
             </div>
           </form>
         </div>
       </div>
     </div>
-  )
+  );
 }

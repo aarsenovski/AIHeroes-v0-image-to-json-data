@@ -6,6 +6,7 @@ import { ProductCard } from "@/components/product-card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel"
 import { Input } from "@/components/ui/input"
 import { ImagePlus, Loader2, Search, Send, Sparkles, X } from "lucide-react"
 import Image from "next/image"
@@ -300,7 +301,48 @@ export default function ProductAnalyzerPage() {
               ) : (
                 <div className="w-full space-y-4">
                   {/* Show analyzed image */}
-                  {message.analyzedImageUrl && (
+                  {message.analyzedImageUrl && message.results && message.results.length > 1 ? (
+                    <Card className="bg-card p-4">
+                      <div className="mb-4">
+                        <span className="text-sm font-medium text-muted-foreground">
+                          Analyzed Images ({message.results.length} items):
+                        </span>
+                      </div>
+                      <Carousel className="w-full max-w-md mx-auto">
+                        <CarouselContent>
+                          {message.results.map((result, idx) => (
+                            <CarouselItem key={idx}>
+                              <div className="space-y-2">
+                                <div className="relative h-64 w-full overflow-hidden rounded-lg">
+                                  <Image
+                                    src={message.analyzedImageUrl || "/placeholder.svg"}
+                                    alt={`${result.detectedItem.productType} - ${result.detectedItem.color}`}
+                                    fill
+                                    className="object-contain"
+                                  />
+                                </div>
+                                <div className="flex flex-wrap gap-2 justify-center">
+                                  <Badge variant="default" className="text-sm">
+                                    {result.detectedItem.productType}
+                                  </Badge>
+                                  <Badge variant="secondary" className="text-sm">
+                                    {result.detectedItem.color}
+                                  </Badge>
+                                  {result.detectedItem.prominence === "primary" && (
+                                    <Badge variant="outline" className="text-xs">
+                                      Primary
+                                    </Badge>
+                                  )}
+                                </div>
+                              </div>
+                            </CarouselItem>
+                          ))}
+                        </CarouselContent>
+                        <CarouselPrevious />
+                        <CarouselNext />
+                      </Carousel>
+                    </Card>
+                  ) : message.analyzedImageUrl ? (
                     <Card className="bg-card p-4">
                       <div className="mb-2">
                         <span className="text-sm font-medium text-muted-foreground">Analyzed Image:</span>
@@ -314,7 +356,7 @@ export default function ProductAnalyzerPage() {
                         />
                       </div>
                     </Card>
-                  )}
+                  ) : null}
 
                   {message.analysis && (
                     <Card className="bg-card p-6">

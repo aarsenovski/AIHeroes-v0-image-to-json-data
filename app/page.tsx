@@ -10,10 +10,26 @@ import { Loader2, Search, Sparkles, Upload } from "lucide-react";
 import Image from "next/image";
 import { useState } from "react";
 
-interface ProductAnalysis {
+interface DetectedItem {
   productType: string;
   color: string;
+  category: string;
+  subcategory?: string;
+  secondaryColors?: string[];
+  gender?: "Mens" | "Womens" | "Unisex" | "Kids";
+  brand?: string;
+  style?: string;
+  fit?: string;
+  material?: string;
+  pattern?: string;
+  sleeveLength?: string;
+  prominence?: "primary" | "secondary";
   confidence?: number;
+}
+
+interface ProductAnalysis {
+  items: DetectedItem[];
+  imageContext?: string;
 }
 
 interface AlgoliaProduct {
@@ -36,14 +52,20 @@ interface AlgoliaProduct {
   colourCode?: string;
 }
 
+interface ItemSearchResult {
+  detectedItem: DetectedItem;
+  searchQuery: string;
+  products: AlgoliaProduct[];
+}
+
 interface Message {
   id: string;
   type: "user" | "assistant";
   content?: string;
   imageUrl?: string;
   analysis?: ProductAnalysis;
-  products?: AlgoliaProduct[];
-  searchQuery?: string;
+  results?: ItemSearchResult[];
+  analyzedImageUrl?: string; // Store the image that was analyzed
   timestamp: Date;
 }
 
@@ -106,12 +128,23 @@ export default function ProductAnalyzerPage() {
     try {
       console.log("[v0] Sending image to API for analysis...");
 
+      // Build conversation messages from previous messages
+      const conversationMessages = messages
+        .filter((msg) => msg.type === "assistant" && msg.content)
+        .map((msg) => ({
+          role: "assistant" as const,
+          content: msg.content || "",
+        }));
+
       const response = await fetch("/api/analyze-product", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ image: selectedImage }),
+        body: JSON.stringify({
+          image: selectedImage,
+          messages: conversationMessages,
+        }),
       });
 
       console.log("[v0] API response status:", response.status);
@@ -136,8 +169,8 @@ export default function ProductAnalyzerPage() {
         id: (Date.now() + 1).toString(),
         type: "assistant",
         analysis: result.analysis,
-        products: result.products,
-        searchQuery: result.searchQuery,
+        results: result.results,
+        analyzedImageUrl: selectedImage, // Store the analyzed image
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, assistantMessage]);
@@ -198,27 +231,54 @@ export default function ProductAnalyzerPage() {
                 </Card>
               ) : (
                 <div className="w-full space-y-4">
+                  {/* Show analyzed image */}
+                  {message.analyzedImageUrl && (
+                    <Card className="bg-card p-4">
+                      <div className="mb-2">
+                        <span className="text-sm font-medium text-muted-foreground">
+                          Analyzed Image:
+                        </span>
+                      </div>
+                      <div className="relative h-64 w-full max-w-md overflow-hidden rounded-lg">
+                        <Image
+                          src={message.analyzedImageUrl}
+                          alt="Analyzed product"
+                          fill
+                          className="object-contain"
+                        />
+                      </div>
+                    </Card>
+                  )}
+
                   {message.analysis && (
                     <Card className="bg-card p-6">
-                      <div className="mb-4 flex flex-wrap items-center gap-4">
-                        <div className="flex items-center gap-2">
+                      <div className="mb-4">
+                        <div className="mb-2 flex items-center gap-2">
                           <span className="text-sm font-medium text-muted-foreground">
-                            Detected:
+                            Detected {message.analysis.items.length} item(s):
                           </span>
-                          <Badge variant="default" className="text-sm">
-                            {message.analysis.productType}
-                          </Badge>
-                          <Badge variant="secondary" className="text-sm">
-                            {message.analysis.color}
-                          </Badge>
                         </div>
-                        {message.searchQuery && (
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <Search className="h-4 w-4" />
-                            <span>
-                              Searching: &quot;{message.searchQuery}&quot;
-                            </span>
-                          </div>
+                        <div className="flex flex-wrap gap-2">
+                          {message.analysis.items.map((item, idx) => (
+                            <div key={idx} className="flex items-center gap-2">
+                              <Badge variant="default" className="text-sm">
+                                {item.productType}
+                              </Badge>
+                              <Badge variant="secondary" className="text-sm">
+                                {item.color}
+                              </Badge>
+                              {item.prominence === "primary" && (
+                                <Badge variant="outline" className="text-xs">
+                                  Primary
+                                </Badge>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                        {message.analysis.imageContext && (
+                          <p className="mt-2 text-sm text-muted-foreground">
+                            {message.analysis.imageContext}
+                          </p>
                         )}
                       </div>
 
@@ -236,29 +296,46 @@ export default function ProductAnalyzerPage() {
                     </Card>
                   )}
 
-                  {/* Product Grid */}
-                  {message.products && message.products.length > 0 && (
-                    <div>
-                      <h3 className="mb-4 text-lg font-semibold text-foreground">
-                        Similar Products ({message.products.length})
-                      </h3>
-                      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                        {message.products.map((product) => (
-                          <ProductCard
-                            key={product.objectID}
-                            product={product}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  )}
+                  {/* Results for each detected item */}
+                  {message.results && message.results.length > 0 && (
+                    <div className="space-y-6">
+                      {message.results.map((result, idx) => (
+                        <div key={idx} className="space-y-3">
+                          <div className="flex items-center gap-3">
+                            <h3 className="text-lg font-semibold text-foreground">
+                              {result.detectedItem.productType} -{" "}
+                              {result.detectedItem.color}
+                            </h3>
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                              <Search className="h-4 w-4" />
+                              <span>&quot;{result.searchQuery}&quot;</span>
+                            </div>
+                          </div>
 
-                  {message.products && message.products.length === 0 && (
-                    <Card className="bg-muted/50 p-6 text-center">
-                      <p className="text-muted-foreground">
-                        No matching products found.
-                      </p>
-                    </Card>
+                          {result.products.length > 0 ? (
+                            <>
+                              <p className="text-sm text-muted-foreground">
+                                Found {result.products.length} similar products
+                              </p>
+                              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                                {result.products.map((product) => (
+                                  <ProductCard
+                                    key={product.objectID}
+                                    product={product}
+                                  />
+                                ))}
+                              </div>
+                            </>
+                          ) : (
+                            <Card className="bg-muted/50 p-6 text-center">
+                              <p className="text-muted-foreground">
+                                No matching products found for this item.
+                              </p>
+                            </Card>
+                          )}
+                        </div>
+                      ))}
+                    </div>
                   )}
 
                   {message.content && (

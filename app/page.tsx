@@ -85,6 +85,7 @@ export default function ProductAnalyzerPage() {
     }
     setMessages((prev) => [...prev, userMessage])
 
+    const userContext = inputMessage.trim()
     setInputMessage("")
     const currentImage = selectedImage
     setSelectedImage(null)
@@ -100,7 +101,10 @@ export default function ProductAnalyzerPage() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ image: currentImage }),
+        body: JSON.stringify({
+          image: currentImage,
+          userContext: userContext || undefined,
+        }),
       })
 
       let result

@@ -9,8 +9,9 @@ export async function POST(req: Request) {
 
   try {
     const body = await req.json()
-    const { image } = body
+    const { image, userContext } = body
     console.log("[v0] Request body parsed, image length:", image?.length || 0)
+    console.log("[v0] User context:", userContext)
 
     if (!image) {
       return Response.json({ error: "No image provided" }, { status: 400 })
@@ -20,6 +21,10 @@ export async function POST(req: Request) {
 
     let analysis
     try {
+      const promptText = userContext
+        ? `Analyze this product image in detail. The user has provided this additional context: "${userContext}". Use this context to inform your analysis. Identify the product type, category, color(s), gender/demographic, style, fit, material, pattern, and any other relevant attributes. Be specific and accurate. If you can see a brand logo or name, include it. Focus on visual details that would help someone search for similar products.`
+        : "Analyze this product image in detail. Identify the product type, category, color(s), gender/demographic, style, fit, material, pattern, and any other relevant attributes. Be specific and accurate. If you can see a brand logo or name, include it. Focus on visual details that would help someone search for similar products."
+
       const result = await generateObject({
         model: "anthropic/claude-sonnet-4.5",
         schema: productAnalysisSchema,
@@ -29,7 +34,7 @@ export async function POST(req: Request) {
             content: [
               {
                 type: "text",
-                text: "Analyze this product image in detail. Identify the product type, category, color(s), gender/demographic, style, fit, material, pattern, and any other relevant attributes. Be specific and accurate. If you can see a brand logo or name, include it. Focus on visual details that would help someone search for similar products.",
+                text: promptText,
               },
               {
                 type: "image",

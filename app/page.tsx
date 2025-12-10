@@ -96,6 +96,13 @@ export default function ProductAnalyzerPage() {
     }
 
     try {
+      const conversationHistory = messages.map((msg) => ({
+        type: msg.type,
+        content: msg.content,
+        analysis: msg.analysis,
+        searchQuery: msg.searchQuery,
+      }))
+
       const response = await fetch("/api/analyze-product", {
         method: "POST",
         headers: {
@@ -104,6 +111,7 @@ export default function ProductAnalyzerPage() {
         body: JSON.stringify({
           image: currentImage,
           userContext: userContext || undefined,
+          conversationHistory, // Send previous conversation for context
         }),
       })
 

@@ -9,9 +9,10 @@ export async function POST(req: Request) {
 
   try {
     const body = await req.json()
-    const { image, userContext } = body
+    const { image, userContext, conversationHistory } = body // Accept conversation history
     console.log("[v0] Request body parsed, image length:", image?.length || 0)
     console.log("[v0] User context:", userContext)
+    console.log("[v0] Conversation history length:", conversationHistory?.length || 0)
 
     if (!image) {
       return Response.json({ error: "No image provided" }, { status: 400 })
@@ -21,9 +22,22 @@ export async function POST(req: Request) {
 
     let analysis
     try {
+      let contextPrompt = ""
+      if (conversationHistory && conversationHistory.length > 0) {
+        contextPrompt = "\n\nPrevious conversation context:\n"
+        conversationHistory.forEach((msg: any, idx: number) => {
+          if (msg.type === "user" && msg.content) {
+            contextPrompt += `User said: "${msg.content}"\n`
+          }
+          if (msg.type === "assistant" && msg.analysis) {
+            contextPrompt += `Previous analysis: ${JSON.stringify(msg.analysis)}\n`
+          }
+        })
+      }
+
       const promptText = userContext
-        ? `Analyze this product image in detail. The user has provided this additional context: "${userContext}". Use this context to inform your analysis. Identify the product type, category, color(s), gender/demographic, style, fit, material, pattern, and any other relevant attributes. Be specific and accurate. If you can see a brand logo or name, include it. Focus on visual details that would help someone search for similar products.`
-        : "Analyze this product image in detail. Identify the product type, category, color(s), gender/demographic, style, fit, material, pattern, and any other relevant attributes. Be specific and accurate. If you can see a brand logo or name, include it. Focus on visual details that would help someone search for similar products."
+        ? `Analyze this product image in detail. The user has provided this additional context: "${userContext}".${contextPrompt} Use this context to inform your analysis. Identify the product type, category, color(s), gender/demographic, style, fit, material, pattern, and any other relevant attributes. Be specific and accurate. If you can see a brand logo or name, include it. Focus on visual details that would help someone search for similar products.`
+        : `Analyze this product image in detail.${contextPrompt} Identify the product type, category, color(s), gender/demographic, style, fit, material, pattern, and any other relevant attributes. Be specific and accurate. If you can see a brand logo or name, include it. Focus on visual details that would help someone search for similar products.`
 
       console.log(promptText)
 

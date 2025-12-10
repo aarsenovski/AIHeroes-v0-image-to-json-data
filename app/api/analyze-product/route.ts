@@ -25,6 +25,8 @@ export async function POST(req: Request) {
         ? `Analyze this product image in detail. The user has provided this additional context: "${userContext}". Use this context to inform your analysis. Identify the product type, category, color(s), gender/demographic, style, fit, material, pattern, and any other relevant attributes. Be specific and accurate. If you can see a brand logo or name, include it. Focus on visual details that would help someone search for similar products.`
         : "Analyze this product image in detail. Identify the product type, category, color(s), gender/demographic, style, fit, material, pattern, and any other relevant attributes. Be specific and accurate. If you can see a brand logo or name, include it. Focus on visual details that would help someone search for similar products."
 
+      console.log(promptText)
+
       const result = await generateObject({
         model: "anthropic/claude-sonnet-4.5",
         schema: productAnalysisSchema,

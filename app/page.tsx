@@ -90,7 +90,16 @@ export default function ProductAnalyzerPage() {
     const currentImage = selectedImage
     setSelectedImage(null)
 
-    if (!currentImage) {
+    const imageToAnalyze = currentImage || messages.findLast((msg) => msg.type === "user" && msg.imageUrl)?.imageUrl
+
+    if (!imageToAnalyze) {
+      const errorMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        type: "assistant",
+        content: "Please upload an image first before sending follow-up messages.",
+        timestamp: new Date(),
+      }
+      setMessages((prev) => [...prev, errorMessage])
       setIsAnalyzing(false)
       return
     }
@@ -109,9 +118,9 @@ export default function ProductAnalyzerPage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          image: currentImage,
+          image: imageToAnalyze,
           userContext: userContext || undefined,
-          conversationHistory, // Send previous conversation for context
+          conversationHistory,
         }),
       })
 

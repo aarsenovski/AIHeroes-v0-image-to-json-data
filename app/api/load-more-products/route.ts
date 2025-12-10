@@ -27,9 +27,14 @@ export async function POST(req: Request) {
 
   try {
     const body = await req.json()
-    const { detectedItem, page = 1 } = body as {
+    const {
+      detectedItem,
+      page = 1,
+      existingProductIds = [],
+    } = body as {
       detectedItem: DetectedItem
       page?: number
+      existingProductIds?: string[]
     }
 
     if (!detectedItem) {
@@ -59,13 +64,18 @@ export async function POST(req: Request) {
     const products = await searchAlgoliaProducts({
       searchTerms: [searchQuery],
       hitsPerPage: 9,
+      page,
       ...(priceFilter && { filters: priceFilter }),
     })
 
+    const uniqueProducts = products.filter((product) => !existingProductIds.includes(product.objectID))
+
+    console.log(`[${correlationId}] Loaded ${products.length} products, ${uniqueProducts.length} unique`)
+
     return Response.json({
-      products,
+      products: uniqueProducts,
       searchQuery,
-      hasMore: products.length === 9,
+      hasMore: uniqueProducts.length > 0 && products.length === 9,
       correlationId,
     })
   } catch (error) {

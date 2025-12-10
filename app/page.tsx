@@ -200,12 +200,15 @@ export default function ProductAnalyzerPage() {
       const result = message.results[itemIndex]
       const currentPage = Math.floor(result.products.length / 9) + 1
 
+      const existingProductIds = result.products.map((p) => p.objectID)
+
       const response = await fetch("/api/load-more-products", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           detectedItem: result.detectedItem,
           page: currentPage,
+          existingProductIds,
         }),
       })
 
@@ -215,21 +218,36 @@ export default function ProductAnalyzerPage() {
 
       const data = await response.json()
 
-      // Update the message with new products
-      setMessages((prev) =>
-        prev.map((msg) => {
-          if (msg.id === messageId && msg.results) {
-            const updatedResults = [...msg.results]
-            updatedResults[itemIndex] = {
-              ...updatedResults[itemIndex],
-              products: [...updatedResults[itemIndex].products, ...data.products],
-              hasMore: data.hasMore,
+      if (data.products.length > 0) {
+        setMessages((prev) =>
+          prev.map((msg) => {
+            if (msg.id === messageId && msg.results) {
+              const updatedResults = [...msg.results]
+              updatedResults[itemIndex] = {
+                ...updatedResults[itemIndex],
+                products: [...updatedResults[itemIndex].products, ...data.products],
+                hasMore: data.hasMore,
+              }
+              return { ...msg, results: updatedResults }
             }
-            return { ...msg, results: updatedResults }
-          }
-          return msg
-        }),
-      )
+            return msg
+          }),
+        )
+      } else {
+        setMessages((prev) =>
+          prev.map((msg) => {
+            if (msg.id === messageId && msg.results) {
+              const updatedResults = [...msg.results]
+              updatedResults[itemIndex] = {
+                ...updatedResults[itemIndex],
+                hasMore: false,
+              }
+              return { ...msg, results: updatedResults }
+            }
+            return msg
+          }),
+        )
+      }
     } catch (error) {
       console.error("Error loading more products:", error)
     } finally {

@@ -337,7 +337,7 @@ export const productAnalysisSchema = z.object({
     .string()
     .optional()
     .describe(
-      "Brief description of the overall image context (e.g., 'person wearing casual outfit', 'product on white background')"
+      "Brief, search-optimized description of unique visual elements not captured in item attributes. Focus on setting, styling composition, occasion context, or distinctive features (e.g., 'Studio shot with coordinated earth tones', 'Outdoor lifestyle styling for autumn', 'Layered streetwear ensemble with urban backdrop'). Keep concise (1-2 sentences max)."
     ),
 });
 

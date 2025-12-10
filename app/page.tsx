@@ -178,7 +178,7 @@ export default function NewPage() {
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         type: "assistant",
-        content: `Sorry, there was an error analyzing the image: ${
+        content: `Sorry, there was an error analyzing the requirements: ${
           error instanceof Error ? error.message : String(error)
         }`,
         timestamp: new Date(),

@@ -70,6 +70,22 @@ export const detectedItemSchema = z.object({
     .describe(
       "Whether this is the main/most prominent item or a secondary item in the image"
     ),
+  maxPrice: z
+    .number()
+    .optional()
+    .describe(
+      "Maximum price limit if specified by user (e.g., 50 for 'under 50 pounds')"
+    ),
+  minPrice: z
+    .number()
+    .optional()
+    .describe(
+      "Minimum price limit if specified by user (e.g., 100 for 'over 100 pounds')"
+    ),
+  currency: z
+    .string()
+    .optional()
+    .describe("Currency code for price filter (e.g., GBP, EUR, USD)"),
   confidence: z
     .number()
     .min(0)

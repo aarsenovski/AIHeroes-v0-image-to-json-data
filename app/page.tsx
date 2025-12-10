@@ -453,7 +453,7 @@ export default function NewPage() {
       <main className="flex-1 overflow-y-auto">
         <div className="mx-auto max-w-7xl px-4 py-8">
           <h2 className="text-4xl font-bold text-foreground mb-8 text-center">
-            Visual Affinities
+            Visual Affinity AI
           </h2>
 
           {/* Sticky Cart Summary */}

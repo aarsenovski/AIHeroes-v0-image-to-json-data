@@ -197,11 +197,11 @@ export default function ProductAnalyzerPage() {
           <div className="mb-3 flex items-center justify-center gap-2">
             <Sparkles className="h-8 w-8 text-primary" />
             <h1 className="text-4xl font-bold text-foreground">
-              Product Analyzer
+              Visual Affinity
             </h1>
           </div>
           <p className="text-lg text-muted-foreground">
-            Upload product images to find similar items
+            Upload any image and find yourself a matching outfit.
           </p>
         </div>
 

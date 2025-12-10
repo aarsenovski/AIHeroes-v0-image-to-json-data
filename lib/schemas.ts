@@ -199,7 +199,6 @@ const subcategories = [
   "Crew Socks",
   "Regular Fit T-Shirts",
   "Crew Neck Jumpers",
-  "Unclassified",
   "Analogue Quartz Watches",
   "Straight Trousers",
   "Plain Shirt - Long Sleeve",
